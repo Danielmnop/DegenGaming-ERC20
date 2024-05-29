@@ -16,35 +16,42 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract DegenGaming is ERC20 {
-    address public owner;
+contract valorantShop is ERC20 {
+    address private Agent;
+    uint256 private nextItemId;
 
-    struct Item {
-        string name;
-        uint256 price;
-    }
+   enum ItemType { Vandal, Operator, HalfShield, FullShield, Ghost, Spectre }
+    mapping(ItemType => uint256) public itemPrices;
+    mapping(address => mapping(ItemType => bool)) public itemsOwned;
+    mapping(ItemType => string) public ItemTypeNames;
 
-    mapping(uint256 => Item) public store;
-    mapping(address => mapping(uint256 => bool)) public itemsOwned;
-
-    event ItemRedeemed(address indexed player, uint256 itemId);
+    event ItemRedeemed(address indexed player, string itemName);
 
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        owner = msg.sender;
-        
-        store[1] = Item("Sword", 100);
-        store[2] = Item("Shield", 150);
-        store[3] = Item("Potion", 50);
-        store[4] = Item("Helmet", 200);
-        store[5] = Item("Armor", 250);
+        Agent = msg.sender;
+        nextItemId = 1;
+
+        itemPrices[ItemType.Vandal] = 2900;
+        itemPrices[ItemType.Operator] = 4700;
+        itemPrices[ItemType.HalfShield] = 450;
+        itemPrices[ItemType.FullShield] = 900;
+        itemPrices[ItemType.Ghost] = 800;
+        itemPrices[ItemType.Spectre] = 1950;
+
+        ItemTypeNames[ItemType.Vandal] = "Vandal";
+        ItemTypeNames[ItemType.Operator] = "Operator";
+        ItemTypeNames[ItemType.HalfShield] = "Half Shield";
+        ItemTypeNames[ItemType.FullShield] = "Full Shield";
+        ItemTypeNames[ItemType.Ghost] = "Ghost";
+        ItemTypeNames[ItemType.Spectre] = "Spectre";
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only the owner can call this function");
+    modifier Player() {
+        require(msg.sender == Agent, "Only the owner can call this function");
         _;
     }
 
-    function mint(address account, uint256 amount) external onlyOwner {
+    function mint(address account, uint256 amount) external Player {
         _mint(account, amount);
     }
 
@@ -58,13 +65,26 @@ contract DegenGaming is ERC20 {
         return true;
     }
 
-    function redeem(uint256 itemId) external {
-        require(store[itemId].price > 0, "Invalid item ID");
-        require(!itemsOwned[msg.sender][itemId], "You have already redeemed this item");
-        require(balanceOf(msg.sender) >= store[itemId].price, "Insufficient balance to redeem this item");
-        _burn(msg.sender, store[itemId].price);
-        itemsOwned[msg.sender][itemId] = true;
-        emit ItemRedeemed(msg.sender, itemId);
+    function transferItem(ItemType itemType, address to) external {
+    require(itemsOwned[msg.sender][itemType], "You do not own this item");
+    require(to!= address(0), "Invalid recipient address");
+
+    itemsOwned[msg.sender][itemType] = false;
+    itemsOwned[to][itemType] = true;
+
+    emit ItemTransferred(msg.sender, to, itemType);
+}
+
+    event ItemTransferred(address indexed from, address indexed to, ItemType itemType);
+
+    function redeem(ItemType itemType) external {
+        require(itemPrices[itemType] > 0, "Invalid item type");
+        require(!itemsOwned[msg.sender][itemType], "You have already redeemed this item");
+        require(balanceOf(msg.sender) >= itemPrices[itemType], "Insufficient balance to redeem this item");
+        _burn(msg.sender, itemPrices[itemType]);
+        itemsOwned[msg.sender][itemType] = true;
+        string memory itemName = ItemTypeNames[itemType];
+        emit ItemRedeemed(msg.sender, itemName);
     }
 }
 ```
