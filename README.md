@@ -1,5 +1,5 @@
 # Smart Contract
-This Solidity program is a "In-game store redeeming using ERC20 token" smart contract. This program inherits from OpenZepelin ERC20 contract. This program has its main function called mint, burn, redeem, balance, and transfer.
+This Solidity program is a "In-game store redeeming using ERC20 token" smart contract. This program inherits from OpenZepelin ERC20 contract. This program has its main function called mint, burn, redeem, balance, transfer tokens, and transfer redeemed items.
 
 ## Description
 This program is a simple contract written in Solidity, a programming language used for developing smart contracts on the Ethereum blockchain.
@@ -95,7 +95,7 @@ To compile the code, click on the "Solidity Compiler" tab in the left-hand sideb
 
 Once the code is compiled, you can deploy the contract by clicking on the "Deploy & Run Transactions" tab in the left-hand sidebar. Select the "degenGaming" contract from the dropdown menu, and then click on the "Deploy" button.
 
-Once the contract is deployed, you can interact with it by calling the mint, burn, approve, transfer, transferFrom, totalSupply, name, symbol, redeem, itemsOwned, owner, store, decimal, allowance, and balanceOf functions.
+Once the contract is deployed, you can interact with it by calling the mint, burn, approve, transfer, transferFrom, transferItem, totalSupply, name, symbol, redeem, itemsOwned, itemsPrice, ItemTypenames, decimal, allowance, and balanceOf functions.
 
 
 ## Author
