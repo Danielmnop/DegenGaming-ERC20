@@ -1,5 +1,5 @@
 # Smart Contract
-This Solidity program is a "In-game store redeeming using ERC20 token" smart contract. This program inherits from OpenZepelin ERC20 contract. This program has its main function called mint, burn, redeem, balance, transfer tokens, and transfer redeemed items.
+This Solidity program is a "In-game store redeeming using ERC20 token" smart contract. This program inherits from OpenZepelin ERC20 contract. This program has its main function called mint, burn, redeem, balance, and transfer.
 
 ## Description
 This program is a simple contract written in Solidity, a programming language used for developing smart contracts on the Ethereum blockchain.
