@@ -8,7 +8,7 @@ This program is a simple contract written in Solidity, a programming language us
 ### How to run this program?
 To run this program, you can use Remix, an online Solidity IDE. To get started, go to the Remix website at https://remix.ethereum.org/.
 
-Once you are on the Remix website, create a new file by clicking on the "+" icon in the left-hand sidebar. Save the file with a .sol extension (e.g., degenGaming.sol). Copy and paste the following code into the file:
+Once you are on the Remix website, create a new file by clicking on the "+" icon in the left-hand sidebar. Save the file with a .sol extension (e.g., DegenGiftCards.sol). Copy and paste the following code into the file:
 
 ```
 // SPDX-License-Identifier: MIT
@@ -16,42 +16,40 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract valorantShop is ERC20 {
-    address private Agent;
-    uint256 private nextItemId;
+contract DegenGiftCards is ERC20 {
+    address public owner;
+    uint256 public constant GIFT_CARD_BASE_PRICE = 1000; 
 
-   enum ItemType { Vandal, Operator, HalfShield, FullShield, Ghost, Spectre }
-    mapping(ItemType => uint256) public itemPrices;
-    mapping(address => mapping(ItemType => bool)) public itemsOwned;
-    mapping(ItemType => string) public ItemTypeNames;
+    enum GiftCardType { TenDollars, TwentyDollars, FiftyDollars, HundredDollars, 
+    TwoHundredDollars, ThreeHundredDollars, FourHundredDollars, FiveHundredDollars }
 
-    event ItemRedeemed(address indexed player, string itemName);
-
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        Agent = msg.sender;
-        nextItemId = 1;
-
-        itemPrices[ItemType.Vandal] = 2900;
-        itemPrices[ItemType.Operator] = 4700;
-        itemPrices[ItemType.HalfShield] = 450;
-        itemPrices[ItemType.FullShield] = 900;
-        itemPrices[ItemType.Ghost] = 800;
-        itemPrices[ItemType.Spectre] = 1950;
-
-        ItemTypeNames[ItemType.Vandal] = "Vandal";
-        ItemTypeNames[ItemType.Operator] = "Operator";
-        ItemTypeNames[ItemType.HalfShield] = "Half Shield";
-        ItemTypeNames[ItemType.FullShield] = "Full Shield";
-        ItemTypeNames[ItemType.Ghost] = "Ghost";
-        ItemTypeNames[ItemType.Spectre] = "Spectre";
+    struct GiftCardInfo {
+        uint256 price;
+        string description;
     }
 
-    modifier Player() {
-        require(msg.sender == Agent, "Only the owner can call this function");
+    mapping(GiftCardType => GiftCardInfo) public giftCardPrices;
+    mapping(address => mapping(GiftCardType => bool)) public giftCardsOwned;
+
+    event GiftCardRedeemed(address indexed player, GiftCardType giftCardType);
+
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
+        owner = msg.sender;
+
+        for (uint8 i = 0; i < 8; i++) {
+            GiftCardType cardType = GiftCardType(i);
+            uint256 price = (i + 1) * GIFT_CARD_BASE_PRICE;
+            string memory description = getGiftCardDescription(cardType);
+            giftCardPrices[cardType] = GiftCardInfo(price, description);
+        }
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can call this function");
         _;
     }
 
-    function mint(address account, uint256 amount) external Player {
+    function mint(address account, uint256 amount) external onlyOwner {
         _mint(account, amount);
     }
 
@@ -59,43 +57,60 @@ contract valorantShop is ERC20 {
         _burn(msg.sender, amount);
     }
 
-    function transfer(address recipient, uint256 amount) public override returns (bool) {
-        require(recipient != address(0), "ERC20: transfer to the zero address");
-        _transfer(_msgSender(), recipient, amount);
-        return true;
+    function redeemGiftCard(GiftCardType giftCardType) external {
+        require(giftCardType >= GiftCardType.TenDollars && giftCardType 
+        <= GiftCardType.FiveHundredDollars, "Invalid gift card type");
+        uint256 price = giftCardPrices[giftCardType].price;
+        require(balanceOf(msg.sender) >= price, "Insufficient balance to redeem this gift card");
+
+        _burn(msg.sender, price);
+        giftCardsOwned[msg.sender][giftCardType] = true;
+        emit GiftCardRedeemed(msg.sender, giftCardType);
     }
 
-    function transferItem(ItemType itemType, address to) external {
-    require(itemsOwned[msg.sender][itemType], "You do not own this item");
-    require(to!= address(0), "Invalid recipient address");
+    function transferGiftCard(GiftCardType giftCardType, address to) external {
+        require(giftCardsOwned[msg.sender][giftCardType], "You do not own this gift card");
+        require(to != address(0), "Invalid recipient address");
 
-    itemsOwned[msg.sender][itemType] = false;
-    itemsOwned[to][itemType] = true;
+        giftCardsOwned[msg.sender][giftCardType] = false;
+        giftCardsOwned[to][giftCardType] = true;
 
-    emit ItemTransferred(msg.sender, to, itemType);
-}
-
-    event ItemTransferred(address indexed from, address indexed to, ItemType itemType);
-
-    function redeem(ItemType itemType) external {
-        require(itemPrices[itemType] > 0, "Invalid item type");
-        require(!itemsOwned[msg.sender][itemType], "You have already redeemed this item");
-        require(balanceOf(msg.sender) >= itemPrices[itemType], "Insufficient balance to redeem this item");
-        _burn(msg.sender, itemPrices[itemType]);
-        itemsOwned[msg.sender][itemType] = true;
-        string memory itemName = ItemTypeNames[itemType];
-        emit ItemRedeemed(msg.sender, itemName);
+        emit Transfer(msg.sender, to, giftCardPrices[giftCardType].price); 
     }
+
+    function getGiftCardDescription(GiftCardType cardType) internal pure returns (string memory) {
+        if (cardType == GiftCardType.TenDollars) {
+            return "10$ Gift card";
+        } else if (cardType == GiftCardType.TwentyDollars) {
+            return "20$ Gift card";
+        } else if (cardType == GiftCardType.FiftyDollars) {
+            return "50$ Gift card";
+        } else if (cardType == GiftCardType.HundredDollars) {
+            return "100$ Gift card";
+        } else if (cardType == GiftCardType.TwoHundredDollars) {
+            return "200$ Gift card";
+        } else if (cardType == GiftCardType.ThreeHundredDollars) {
+            return "300$ Gift card";
+        } else if (cardType == GiftCardType.FourHundredDollars) {
+            return "400$ Gift card";
+        } else if (cardType == GiftCardType.FiveHundredDollars) {
+            return "500$ Gift card";
+        } else {
+            revert("Invalid gift card type");
+        }
+    }
+
 }
+
 ```
 
 
 
-To compile the code, click on the "Solidity Compiler" tab in the left-hand sidebar. Make sure the "Compiler" option is set to "0.8.0" (or another compatible version), and then click on the "Compile degenGaming.sol" button.
+To compile the code, click on the "Solidity Compiler" tab in the left-hand sidebar. Make sure the "Compiler" option is set to "0.8.0" (or another compatible version), and then click on the "Compile DegenGiftCards.sol" button.
 
-Once the code is compiled, you can deploy the contract by clicking on the "Deploy & Run Transactions" tab in the left-hand sidebar. Select the "degenGaming" contract from the dropdown menu, and then click on the "Deploy" button.
+Once the code is compiled, you can deploy the contract by clicking on the "Deploy & Run Transactions" tab in the left-hand sidebar. Select the "DegenGiftCards" contract from the dropdown menu, and then click on the "Deploy" button.
 
-Once the contract is deployed, you can interact with it by calling the mint, burn, approve, transfer, transferFrom, transferItem, totalSupply, name, symbol, redeem, itemsOwned, itemsPrice, ItemTypenames, decimal, allowance, and balanceOf functions.
+Once the contract is deployed, you can interact with it by calling the mint, burn, approve, transfer, transferFrom, totalSupply,owner, name, symbol, redeemGiftCards, transferGiftCards, GIFT_CARD_BASE_PRICE, giftCardPrices, giftCardsOwned, decimal, allowance, and balanceOf functions.
 
 
 ## Author
